@@ -9,7 +9,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
+      - name: Baixar arquivos
         uses: actions/checkout@v4
 
       - name: Instalar Java
@@ -26,20 +26,22 @@ jobs:
       - name: Extrair projeto
         run: |
           unzip -q fifa-cloud-18-android-prototype.zip -d _project
-          rsync -a _project/fifa-cloud-18/ ./
+          find _project -name settings.gradle -print
 
-      - name: Preparar interface
+      - name: Preparar aplicativo
         run: |
-          mkdir -p android-app/app/src/main/assets/www
-          cp -R web/. android-app/app/src/main/assets/www/
+          ANDROID_DIR="$(dirname "$(find _project -name settings.gradle -print -quit)")"
+          PROJECT_DIR="$(dirname "$ANDROID_DIR")"
+          mkdir -p "$ANDROID_DIR/app/src/main/assets/www"
+          cp -R "$PROJECT_DIR/web/." "$ANDROID_DIR/app/src/main/assets/www/"
+          echo "ANDROID_DIR=$ANDROID_DIR" >> "$GITHUB_ENV"
 
       - name: Compilar APK
-        working-directory: android-app
-        run: gradle assembleDebug
+        run: gradle -p "$ANDROID_DIR" assembleDebug
 
-      - name: Disponibilizar APK
+      - name: Publicar APK
         uses: actions/upload-artifact@v4
         with:
           name: FIFA-Cloud-18-APK
-          path: android-app/app/build/outputs/apk/debug/app-debug.apk
+          path: _project/fifa-cloud-18/android-app/app/build/outputs/apk/debug/app-debug.apk
           
